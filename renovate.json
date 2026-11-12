@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "minimumReleaseAge": "7 days",
+  "dependencyDashboard": true,
+  "packageRules": [{"matchManagers": ["github-actions", "dockerfile"], "pinDigests": true}],
+  "customManagers": [{
+    "customType": "regex",
+    "managerFilePatterns": ["/\\.github/workflows/.*\\.yml$/"],
+    "matchStrings": ["go install (?<depName>github.com/docker/sandbox-kit-spec/v3)/cmd/kit-tck@(?<currentValue>v[^\\s]+)"],
+    "datasourceTemplate": "go"
+  }]
+}

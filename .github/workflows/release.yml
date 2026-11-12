@@ -1,0 +1,78 @@
+name: Publish release kits
+# Manual only. A protected release environment must approve the reviewed tag.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing reviewed release tag (v0.1.0)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: publish-kits
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'shelajev/obscura-sbx-kit' && github.ref == 'refs/heads/main'
+    environment: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve reviewed release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          test "$RELEASE_TAG" = v0.1.0
+          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}"
+          git merge-base --is-ancestor "refs/tags/$RELEASE_TAG^{commit}" HEAD
+          git checkout --detach "refs/tags/$RELEASE_TAG^{commit}"
+          test "$(sed -n 's/^version: "\(.*\)"/\1/p' mixin/obscura-mixin.yaml)" = "${RELEASE_TAG#v}"
+          test "$(sed -n 's/^version: "\(.*\)"/\1/p' standalone/obscura.yaml)" = "${RELEASE_TAG#v}"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          driver-opts: image=moby/buildkit:v0.25.1@sha256:79cc6476ab1a3371c9afd8b44e7c55610057c43e18d9b39b68e2b0c2475cc1b6
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.11'
+          cache: false
+      - name: Build and validate both architectures before login
+        run: |
+          set -euo pipefail
+          go install github.com/docker/sandbox-kit-spec/v3/cmd/kit-tck@v3.0.0-m.11
+          for kind in mixin standalone; do
+            stem=obscura
+            image=obscura-sbx-kit
+            if [ "$kind" = mixin ]; then stem=obscura-mixin; image=obscura-sbx-kit-mixin; fi
+            docker buildx build "$kind" -f "$kind/$stem.yaml" \
+              --platform linux/amd64,linux/arm64 \
+              -t "ghcr.io/shelajev/$image:0.1.0" \
+              --output "type=oci,dest=/tmp/$kind-layout,tar=false"
+            kit-tck validate --layout "/tmp/$kind-layout" 0.1.0
+          done
+      - name: Publish validated OCI layouts with ephemeral token
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # skopeo copies the validated layouts, avoiding a second, different build.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo
+          authfile=$(mktemp)
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" | skopeo login --authfile "$authfile" \
+            --username '${{ github.actor }}' --password-stdin ghcr.io
+          for kind in mixin standalone; do
+            image=obscura-sbx-kit
+            if [ "$kind" = mixin ]; then image=obscura-sbx-kit-mixin; fi
+            skopeo copy --all --preserve-digests --authfile "$authfile" \
+              "oci:/tmp/$kind-layout:0.1.0" "docker://ghcr.io/shelajev/$image:0.1.0"
+          done

@@ -1,0 +1,8 @@
+# Consumer example, not this project's private development environment.
+# The image below is a planned release destination; publication is pending.
+schemaVersion: "1"
+name: obscura-shell-example
+agent: obscura-sbx-kit
+kits:
+  - source: ghcr.io/shelajev/obscura-sbx-kit:0.1.0
+workspace: .

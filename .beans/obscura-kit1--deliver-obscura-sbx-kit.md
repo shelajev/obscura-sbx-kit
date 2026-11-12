@@ -1,7 +1,7 @@
 ---
 id: obscura-kit1
 title: Deliver a reusable Obscura SBX kit
-status: todo
+status: in-progress
 type: feature
 priority: normal
 ---
@@ -24,22 +24,23 @@ CLI, MCP, and CDP behavior; authentication/bind defaults; compatibility with
 SBX proxy/certificate/network enforcement; architecture claims; pinned
 downloads and workflow actions; tests; and usable reader instructions.
 
-Current status: blocked before crew provisioning. Operator approved the host
-factory diagnostic and dashboard registration/sampler/watchdog for this task.
-Diagnostic verified driver/source identity; stale unrelated Learnmap watchdog
-registration fails its monitoring check. More importantly, the Herdr security
-restoration is not accepted/promoted: see central ai-contrib-hs12 and
-../.local/herdr-factory/security-20261112/STATE.md. Recorded default still uses
-the old template. No crew has been provisioned or started; no restoration
-workers or services have been restarted. Awaiting operator choice to wait for
-restoration or use a verified patched one-off SBX route.
+Current status: operator selected one-off codex-obscura-kit execution with
+Codex implementation and independent Gemini Carbon review. Herdr sequencing
+above is superseded. Reading upstream v0.2.6 and current SBX v3 specification;
+critical proxy/runtime feasibility experiment precedes implementation.
+Local evidence and resource requests live under .local/. Host handles native
+outer SBX validation, editorial routing and GitHub integration. No publishing
+or host execution is authorized from this guest.
 
-GitHub repository created: https://github.com/shelajev/obscura-sbx-kit
-It is empty. Local Git initialized on main with origin configured. Actions
-default token is read-only, Actions cannot approve PR reviews, and allowed
-Actions are restricted to GitHub-owned plus named Docker build/publish actions.
-No workflows or PR triggers exist. All eventual workflow references must be
-pinned to full commit SHAs. No browser kit implementation or checks are claimed.
+Implemented (one-off route): reusable mixin and standalone workload with native
+Obscura 0.2.6, proxy adaptation, additive MCP instructions, loopback CDP,
+Python prerequisite check, archive/base pins, CI/release preparation and docs.
+Measured: 10 unit tests; native ARM64 and emulated AMD64 fixture browser checks;
+actual scoped SBX HTTPS via CLI/MCP; isolated process state; trusted/untrusted
+TLS fixture; Puppeteer CDP; both multiarch OCI layouts pass official m.11 TCK.
+Official resolver + assembler composition with Docker shell also passes runtime
+and CDP checks. Carbon review in progress; exact reports remain .local/.
 
-Keep implementation tasks in this store. A single central Bean is required
-only for Herdr lifecycle, acceptance, usage preservation, and cleanup.
+Remaining acceptance is host-routed: native SBX 0.53.0 creation from guest-built
+artifacts, native AMD64 CI, scoped blog-writer/fresh Gemini audience review,
+GitHub integration and eventual GHCR publication. No guest push/PR/release.
