@@ -4,7 +4,7 @@ kind: workload
 displayName: Obscura browser shell
 description: Standalone shell with Obscura CLI, native stdio MCP and loopback CDP
 version: "0.1.0"
-sourceUrl: https://github.com/io.github.shelajev/obscura-sbx-kit
+sourceUrl: https://github.com/shelajev/obscura-sbx-kit
 licenses: [Apache-2.0]
 provides: ["io.github.shelajev/obscura@0.2.6"]
 capabilities:

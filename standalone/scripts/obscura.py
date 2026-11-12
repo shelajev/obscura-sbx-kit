@@ -24,6 +24,8 @@ def literal_proxy(value):
         addresses = socket.getaddrinfo(url.hostname, url.port, type=socket.SOCK_STREAM)
         # Prefer IPv4 when both are available; IPv6-only proxies remain supported.
         addresses.sort(key=lambda item: item[0] != socket.AF_INET)
+        if not addresses:
+            raise ValueError('proxy resolved to no addresses')
         ip = ipaddress.ip_address(addresses[0][4][0])
     host = f'[{ip}]' if ip.version == 6 else str(ip)
     return urlunsplit((url.scheme, f'{host}:{url.port}', '', '', ''))
@@ -33,6 +35,8 @@ def command(args, env):
     args = list(args)
     explicit = False
     for i, arg in enumerate(args):
+        if arg == '--':
+            break
         if arg == '--proxy':
             if i + 1 >= len(args):
                 raise ValueError('--proxy requires a URL')
@@ -49,14 +53,25 @@ def command(args, env):
     return [BINARY] + args
 
 
+
+def child_environment(source):
+    env = source.copy()
+    # The explicit native --proxy is authoritative. Do not leak conflicting
+    # hostname proxies to worker or subresource transports.
+    for key in ('OBSCURA_PROXY', 'HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY',
+                'http_proxy', 'ALL_PROXY', 'all_proxy'):
+        env.pop(key, None)
+    if not env.get('SSL_CERT_FILE'):
+        env['SSL_CERT_FILE'] = '/etc/ssl/certs/ca-certificates.crt'
+    return env
+
 def main():
     try:
         args = command(sys.argv[1:], os.environ)
     except (ValueError, OSError):
         # Never echo a malformed URL: it could contain credentials.
         sys.exit('obscura: invalid or unresolvable proxy; see docs/troubleshooting.md')
-    env = os.environ.copy()
-    env.setdefault('SSL_CERT_FILE', '/etc/ssl/certs/ca-certificates.crt')
+    env = child_environment(os.environ)
     os.execve(BINARY, args, env)
 
 

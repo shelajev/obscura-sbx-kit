@@ -49,6 +49,15 @@ class InstallerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             installer.HTTPSOnlyRedirect().redirect_request(None, None, 302, '', {}, 'http://bad')
 
+    def test_distribution_notices_and_metadata(self):
+        for kit in ('mixin', 'standalone'):
+            self.assertEqual(Path(kit, 'LICENSE').read_bytes(), Path('LICENSE').read_bytes())
+            self.assertEqual(Path(kit, 'NOTICE').read_bytes(), Path('NOTICE').read_bytes())
+            self.assertTrue(Path(kit, 'licenses/V8.txt').is_file())
+            descriptor = next(Path(kit).glob('*.yaml')).read_text()
+            self.assertIn('sourceUrl: https://github.com/shelajev/obscura-sbx-kit', descriptor)
+            self.assertIn('io.github.shelajev/obscura@0.2.6', descriptor)
+
     def test_shared_sources_match(self):
         for name in ('obscura.py', 'install-browser.py'):
             self.assertEqual(Path('mixin/scripts', name).read_bytes(), Path('standalone/scripts', name).read_bytes())

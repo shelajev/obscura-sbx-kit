@@ -4,12 +4,13 @@ kind: mixin
 displayName: Obscura browser
 description: Native Obscura CLI, stdio MCP and loopback CDP for an existing agent
 version: "0.1.0"
-sourceUrl: https://github.com/io.github.shelajev/obscura-sbx-kit
+sourceUrl: https://github.com/shelajev/obscura-sbx-kit
 licenses: [Apache-2.0]
 provides: ["io.github.shelajev/obscura@0.2.6"]
 requires:
   - deb/libc6 >= 2.35
   - deb/libgcc-s1 >= 12
+  - deb/ca-certificates
 # No runtime network grants. The operator grants only required browsing targets.
 capabilities:
   # DHI and Debian use different versioned Python package names. Validate the

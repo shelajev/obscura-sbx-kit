@@ -43,6 +43,19 @@ claude mcp list
 claude mcp add --transport stdio --scope user obscura -- /usr/local/bin/obscura mcp
 ```
 
+Codex filters the environment of stdio MCP children. After adding the server,
+add this key **inside the existing `[mcp_servers.obscura]` table** in the
+sandbox's `~/.codex/config.toml`, preserving its `command`, `args` and all other
+tables:
+
+```toml
+env_vars = ["OBSCURA_PROXY", "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "SSL_CERT_FILE", "SSL_CERT_DIR"]
+```
+
+This passes current sandbox values without storing gateway addresses or secrets
+in the configuration. Do not create a duplicate TOML table. Claude Code inherits
+the launching sandbox environment; launch it from the normal SBX session.
+
 Restart the agent and ask it to navigate an approved HTTPS page, take a snapshot,
 fill a field and click a button. Each agent starts its own native MCP process;
 no shared HTTP service or browser profile is created. Settings files are never

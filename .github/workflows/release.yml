@@ -61,6 +61,7 @@ jobs:
       - name: Publish validated OCI layouts with ephemeral token
         env:
           GHCR_TOKEN: ${{ github.token }}
+          GHCR_ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
           # skopeo copies the validated layouts, avoiding a second, different build.
@@ -69,10 +70,11 @@ jobs:
           authfile=$(mktemp)
           trap 'rm -f "$authfile"' EXIT
           printf '%s' "$GHCR_TOKEN" | skopeo login --authfile "$authfile" \
-            --username '${{ github.actor }}' --password-stdin ghcr.io
+            --username "$GHCR_ACTOR" --password-stdin ghcr.io
           for kind in mixin standalone; do
             image=obscura-sbx-kit
             if [ "$kind" = mixin ]; then image=obscura-sbx-kit-mixin; fi
-            skopeo copy --all --preserve-digests --authfile "$authfile" \
+            skopeo copy --all --preserve-digests --digestfile "/tmp/$kind-digest" --authfile "$authfile" \
               "oci:/tmp/$kind-layout:0.1.0" "docker://ghcr.io/shelajev/$image:0.1.0"
+            cat "/tmp/$kind-digest"
           done

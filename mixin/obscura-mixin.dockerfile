@@ -7,5 +7,8 @@ COPY scripts/install-browser.py /tmp/install-browser.py
 RUN --mount=type=secret,id=build-ca,target=/run/build-ca \
     python3 /tmp/install-browser.py "$TARGETARCH"
 COPY --chmod=755 scripts/obscura.py /out/usr/local/bin/obscura
+COPY --chmod=644 LICENSE NOTICE /out/opt/obscura/
+COPY --chmod=644 licenses/ /out/opt/obscura/licenses/
+RUN chmod 0755 /out /out/opt /out/opt/obscura /out/usr /out/usr/local /out/usr/local/bin /out/opt/obscura/licenses
 FROM scratch
 COPY --from=download /out/ /

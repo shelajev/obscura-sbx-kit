@@ -34,6 +34,18 @@ class LauncherTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             launcher.command(['--proxy'], {})
 
+    def test_child_environment_scrubs_proxy_and_defaults_empty_ca(self):
+        env = launcher.child_environment({'HTTPS_PROXY': 'http://gateway:9',
+                'OBSCURA_PROXY': 'http://other:9', 'SSL_CERT_FILE': '', 'PATH': '/bin'})
+        self.assertEqual(env, {'SSL_CERT_FILE': '/etc/ssl/certs/ca-certificates.crt', 'PATH': '/bin'})
+        self.assertEqual(launcher.child_environment({'SSL_CERT_FILE': '/custom'})['SSL_CERT_FILE'], '/custom')
+
+    def test_empty_dns_and_argument_delimiter(self):
+        with patch.object(socket, 'getaddrinfo', return_value=[]), self.assertRaises(ValueError):
+            launcher.literal_proxy('http://gateway:3128')
+        self.assertEqual(launcher.command(['fetch', '--', '--proxy=literal'], {}),
+                         [launcher.BINARY, 'fetch', '--', '--proxy=literal'])
+
     def test_no_proxy_preserves_native_args_and_ssrf(self):
         args = ['serve', '--host', '127.0.0.1', '--port', '9222']
         self.assertEqual(launcher.command(args, {}), [launcher.BINARY] + args)

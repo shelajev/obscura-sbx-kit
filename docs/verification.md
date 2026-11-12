@@ -13,7 +13,7 @@ All development execution occurred inside the ARM64 SBX guest, using its Docker
 | Session isolation | Two simultaneous processes: independent DOM, cookies, localStorage |
 | Trust roots | Untrusted fixture CA rejected; supplied CA accepted |
 | Actual SBX proxy | Public HTTPS CLI and MCP pass; private/localhost/metadata URLs denied |
-| ARM64 Docker | CLI/MCP/render/TLS fixture tests and Puppeteer CDP pass |
+| ARM64 Docker | Standalone and actual mixin OCI overlay: CLI/MCP/render/TLS/proxy fixture tests and Puppeteer CDP |
 | AMD64 guest Docker + QEMU user mode | Native archive CLI/MCP/render/TLS fixture tests pass under emulation |
 | AMD64 native runner | CI prepared; not run during guest development |
 | Official resolver/assembler | Published shell workload + final mixin resolve and compose; composed Docker CLI/MCP/TLS/render/CDP pass |
@@ -64,6 +64,13 @@ Python executable at install while retaining libc/libgcc package requirements.
 
 TCK validates kit metadata and content, not a live SBX control plane. Plain
 Dockerfile images used in runtime tests are not substitutes for published kits.
+
+The verification script also loads the actual frontend-produced mixin OCI layout
+as a named build context, overlays it onto the pinned shell base, and runs the
+same runtime/CDP checks as the standalone. Both images retain LICENSE, NOTICE
+and bundled dependency license texts. Deterministic proxy fixtures run in CI:
+HTTPS CONNECT with a supplied test CA and external script; CDP HTTP proxy with
+a reserved synthetic origin; live private-target denials without SSRF opt-in.
 
 Unit tests use Python's standard library:
 

@@ -63,3 +63,9 @@ SBX using those digests and update consumer examples to immutable references.
 This workflow is prepared, not a successful publication claim. It does not
 create signatures or attest independent review. If signature enforcement is
 required, the host must add and validate its intended signing path first.
+
+Distribution notice texts live under each kit's `licenses/` and are copied into
+`/opt/obscura/licenses`, alongside `/opt/obscura/LICENSE` and `NOTICE`. Their
+`SOURCES.md` records provenance; preserve texts when updating binaries. The
+upstream archive supplies no consolidated binary SBOM; this project does not
+claim an exhaustive independently rebuilt dependency inventory.

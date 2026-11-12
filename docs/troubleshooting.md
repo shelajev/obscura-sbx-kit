@@ -50,3 +50,12 @@ To remove agent wiring, use `codex mcp remove obscura` or
 `claude mcp remove --scope user obscura`, then remove only this mixin's kit entry
 and recreate the sandbox. Preserve other settings and servers. The kit creates
 no state directory to delete by default.
+
+Codex 0.164.0's local stdio environment allowlist excludes proxy variables.
+Its pinned upstream `codex-rs/rmcp-client/src/utils.rs` was inspected in the
+guest. Use README's additive `env_vars` key in `[mcp_servers.obscura]` to forward
+current proxy and CA values. A Python-spawned MCP check alone does not prove
+agent environment forwarding; native host agent validation remains required.
+The launcher removes raw proxy environment variables after constructing the
+explicit literal `--proxy`; upstream's multiworker server forwards that explicit
+proxy to its own workers. Empty `SSL_CERT_FILE` now selects the default bundle.

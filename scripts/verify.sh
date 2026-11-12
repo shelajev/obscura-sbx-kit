@@ -21,5 +21,15 @@ docker buildx build standalone -f standalone/obscura.dockerfile \
   "${secret[@]}" --platform "linux/$arch" -t obscura-runtime:0.1.0 --load
 docker run --rm --entrypoint python3 -v "$PWD/tests:/tests:ro" \
   obscura-runtime:0.1.0 /tests/runtime.py
+docker buildx build . -f tests/mixin-runtime.dockerfile \
+  --build-context "browser-overlay=oci-layout://.local/mixin-$arch:0.1.0" \
+  --platform "linux/$arch" -t obscura-overlay-test:0.1.0 --load
+docker run --rm --entrypoint python3 -v "$PWD/tests:/tests:ro" \
+  obscura-overlay-test:0.1.0 /tests/runtime.py
+for image in obscura-runtime:0.1.0 obscura-overlay-test:0.1.0; do
+  docker run --rm --entrypoint python3 "$image" -c \
+    'from pathlib import Path; assert all(Path("/opt/obscura",p).is_file() for p in ("LICENSE", "NOTICE", "licenses/V8.txt"))'
+done
 npm ci --ignore-scripts
 OBSCURA_DOCKER_IMAGE=obscura-runtime:0.1.0 node tests/cdp.mjs
+OBSCURA_DOCKER_IMAGE=obscura-overlay-test:0.1.0 node tests/cdp.mjs
