@@ -1,0 +1,7 @@
+.local/
+__pycache__/
+.venv/
+node_modules/
+*.tar
+*.tar.gz
+*.oci
