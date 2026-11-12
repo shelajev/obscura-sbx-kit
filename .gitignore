@@ -5,3 +5,7 @@ node_modules/
 *.tar
 *.tar.gz
 *.oci
+
+# Local task tracking
+.beans/
+.beans.yml
