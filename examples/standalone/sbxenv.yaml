@@ -1,8 +1,8 @@
 # Complete standalone shell environment template.
-# The image below is a planned release destination; publication is pending.
+# Published 0.1.1 immutable digest; optional tag: obscura-sbx-kit:0.1.1.
 schemaVersion: "1"
 name: obscura-shell-example
 agent: obscura-sbx-kit
 kits:
-  - source: ghcr.io/shelajev/obscura-sbx-kit:0.1.1
+  - source: ghcr.io/shelajev/obscura-sbx-kit@sha256:40759258242928bcd042ce10b23e35279fcd50e278480ae459a50abe6b9888a8
 workspace: .

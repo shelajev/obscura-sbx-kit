@@ -9,8 +9,9 @@ For each update:
    Verify each Linux render/non-stealth archive digest against GitHub metadata;
    update `VERSION` and `ARCHIVES` in `mixin/scripts/install-browser.py` and copy
    that file to `standalone/scripts/`. Keep both native executables together.
-2. Update both descriptors' browser provides and kit versions, changelog, example
-   tags, package.json and package-lock.json versions together. Keep the two download
+2. Update both descriptors' browser provides and kit versions, changelog,
+   package.json and package-lock.json versions together. Update consumer digests
+   only after publication and verification as described below. Keep the two download
    stages and scripts identical; unit tests detect drift. Inspect upstream
    licenses and runtime dependencies before retaining compatibility claims.
 3. Renew OCI base/frontend/BuildKit digests only after the same seven-day hold.
@@ -44,28 +45,36 @@ Keep repository default token permissions read-only, and confirm the Actions
 token can create both GHCR packages. Set package visibility for intended users.
 No Docker Hub secret or long-lived registry token is required.
 
-For the next patch release, from an up-to-date main checkout after checks pass:
+Version 0.1.1 is already published. Its immutable tag `v0.1.1` points to
+`c57f192289b59f1fb33278aa50dfacc474a0bdda`; do not rebuild, republish or move it.
+[Release run 43415479048](https://github.com/shelajev/obscura-sbx-kit/actions/runs/43415479048)
+succeeded from main `2259a26`. Both published digest references are recorded in
+[setup](setup.md) and the consumer examples.
+
+For a future release, first bump both descriptors, package manifests, changelog
+to the new version. Leave consumer references on the last verified release
+until the new digests are published and checked. From an up-to-date main checkout
+after checks pass, set `VERSION` to that new version (without the `v` prefix):
 
 ```sh
-python3 scripts/release.py v0.1.1
-git tag v0.1.1
-git push origin refs/tags/v0.1.1
-gh workflow run release.yml --ref main -f tag=v0.1.1
+python3 scripts/release.py "v$VERSION"
+git tag "v$VERSION"
+git push origin "refs/tags/v$VERSION"
+gh workflow run release.yml --ref main -f "tag=v$VERSION"
 ```
 
-The local validator prints `0.1.1` and rejects mismatched descriptor, package
-or lockfile versions. For later releases, bump all those versions and the
-changelog/examples, then use the new `vMAJOR.MINOR.PATCH` tag. Do not force or
-move an existing Git tag.
+The local validator prints the selected version and rejects mismatched
+descriptor, package or lockfile versions. Never force or move an existing tag,
+and never rerun publication for an existing version.
 
 The manual workflow accepts only main and requires the reviewed tag commit to
 be an ancestor of that main checkout. It derives the version from the tag and
 validates it against both kit descriptors and package manifests. It builds both
 architectures and validates both OCI layouts before registry login, then copies
-those exact layouts with digest preservation to:
+those exact layouts with digest preservation to the selected version tags:
 
-- `ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1`
-- `ghcr.io/shelajev/obscura-sbx-kit:0.1.1`
+- `ghcr.io/shelajev/obscura-sbx-kit-mixin:<VERSION>`
+- `ghcr.io/shelajev/obscura-sbx-kit:<VERSION>`
 
 Only the publication job has `packages: write`, using ephemeral `GITHUB_TOKEN`
 and a temporary auth file removed on exit. The workflow checks both destinations
@@ -79,7 +88,10 @@ it; inspect and retain its digest, fix the cause, and prepare a new patch versio
 through the normal review path. Do not delete or retag published versions to
 hide failures. Successful copies record each `ghcr.io/...@sha256:...` reference
 in the Actions job summary. Record both, run registry TCK and native SBX consumer
-checks using those digests, then update examples to the verified digest references.
+checks using those digests, then commit a documentation update to the examples, README, setup and
+verification pages with the verified digest references. The version validator
+checks both descriptors and package manifests, not consumer digest references.
+This documentation follow-up does not move the release tag or rerun publication.
 
 Release 0.1.0 is a failed partial publication: manual run `43404277441`
 published the mixin index
@@ -87,7 +99,8 @@ published the mixin index
 then failed copying the standalone index. The standalone tag returned
 `manifest unknown`; blobs may remain. No GitHub release was published.
 Retain `v0.1.0` on `d3d17a8` and both registry destinations; never rerun 0.1.0.
-Prepare 0.1.1 through review and fresh native CI instead.
+The subsequent 0.1.1 release completed through review, fresh native CI and
+guarded publication; retain the failed 0.1.0 history.
 
 Exports must set `oci-mediatypes=true,compression=gzip,force-compression=true`.
 The inherited workload base has zstd layers. Skopeo adds compression annotations
@@ -101,7 +114,10 @@ checks their digests/media types and rejects non-gzip image layers. An OCI layou
 wrapper and a successful OCI-to-OCI copy alone do not prove registry compatibility.
 Test a preserved-digest copy to a disposable registry before publication.
 
-0.1.1 GHCR publication and native registry consumption remain pending.
+0.1.1 GHCR publication and native ARM64 registry consumption passed. Native
+AMD64 source CI passed, but native AMD64 outer SBX composition remains untested.
+Both final registry TCK checks passed 19/19; see
+[verification](verification.md) for the measured scope.
 The workflow does not sign kits or attest
 independent review. Environments requiring signatures need a separately validated
 signing path before consumption. All workflows use push/manual events only.

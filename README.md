@@ -2,13 +2,14 @@
 
 Add [Obscura](https://www.obscura.sh/) to an existing SBX agent as a browser
 mixin. The kit installs Obscura 0.2.6 and its worker, with native stdio MCP,
-CLI and loopback CDP. It adds no credentials or browsing network grants.
+CLI and loopback CDP. A standalone shell kit supplies the same browser.
+Neither kit adds credentials or browsing network grants.
 
-**Status:** 0.1.0 partially published: the mixin was uploaded, but standalone
-publication failed; no GitHub release was published. Both destinations and the
-Git tag are retained. The examples target the pending 0.1.1 patch; they are not
-yet verified published references. See [release history](CHANGELOG.md).
-To try a local checkout before publication, see [setup](docs/setup.md).
+**Status:** 0.1.1 is published to GHCR. Both kits were consumed by native
+ARM64 SBX 0.53.0 sandboxes; native AMD64 and ARM64 source CI passed.
+Native AMD64 host-level SBX composition remains untested. The partial 0.1.0
+publication is retained; see [release history](CHANGELOG.md) and
+[verification](docs/verification.md).
 
 ## Add it to your agent
 
@@ -18,19 +19,20 @@ workload containing `/usr/bin/python3` (3.11+), glibc 2.35+, libgcc and a CA sto
 checks Python at install and requires the native libraries explicitly; Alpine/musl is unsupported. ARM64 is tested
 natively; see [verification](docs/verification.md) for AMD64 coverage and limits.
 
-Once the release is published to GHCR, add this entry to your existing
+Add this published mixin entry to your existing
 `sbxenv.yaml` **without replacing its other entries or settings**:
 
 ```yaml
 kits:
   # Keep your existing workload and other mixins here.
-  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1
+  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin@sha256:29aa5cd0daf043d4599a64dc885deddab43824b1d2f2849b165f4ff502d85c36
 ```
 
-Prefer the verified release digest over a tag. GHCR must be permitted by your
+The example pins the verified immutable release digest. The version tag
+`ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1` is also usable. GHCR must be permitted by your
 SBX kit-source policy; retain existing entries when adding only
-`ghcr.io/shelajev/`. For source builds and standalone use, see
-[setup](docs/setup.md).
+`ghcr.io/shelajev/`. See [kit-source policy setup](docs/setup.md#published-kits)
+for checking this setting, and [setup](docs/setup.md) for standalone or source use.
 
 On your host, from the directory containing your environment file, inspect and
 apply the configuration:
@@ -46,7 +48,8 @@ container files, review `sbx env rm ./sbxenv.yaml`, then run the environment
 again. Keep the environment file outside writable sandbox workspace mounts;
 see the [environment-file guide](https://docs.docker.com/ai/sandboxes/configuration/environment-files/).
 
-Inside the created sandbox, check `obscura --version`, then register MCP with
+Ask the attached agent to run these shell commands inside the created sandbox.
+Check `obscura --version` (expect `0.2.6`), then register MCP with
 one of the following additive commands. Choose an unused server name if
 `obscura` already exists:
 
@@ -73,23 +76,26 @@ This passes current sandbox values without storing gateway addresses or secrets
 in the configuration. Do not create a duplicate TOML table. Claude Code inherits
 the launching sandbox environment; launch it from the SBX session without clearing proxy or CA variables.
 
-Restart the agent and ask it to navigate `https://example.com` and take a
-snapshot. Expect the title `Example Domain`. Test form filling and clicking
-on a separately approved site that has a form. Each agent starts its own native MCP process;
-no shared HTTP service or browser profile is created. Settings files are never
-rewritten by the kit. Codex syntax follows the [official MCP guide](https://developers.openai.com/codex/mcp/)
-and was checked against Codex 0.164.0. A live Codex session with the forwarding
-configuration completed native MCP navigation and snapshot through the SBX
-proxy. This does not establish native registry installation. Claude's example follows its
-[stdio MCP documentation](https://code.claude.com/docs/en/mcp); its CLI was not
-available for an execution check.
-
 Grant only the browsing domains your task requires through the host's SBX
 network policy. For a documentation example, an operator may approve
 `example.com:443` with `sbx policy allow network example.com:443` on the host
 if access is not already allowed; redirects and assets may need their own explicit grants.
 The browser cannot grant itself access. See [troubleshooting](docs/troubleshooting.md)
 for proxy and certificate checks.
+
+
+Exit the agent and run `sbx env run ./sbxenv.yaml` again on the host to restart
+it with the updated configuration. Ask it to navigate `https://example.com` and take a
+snapshot. Expect the title `Example Domain`. Test form filling and clicking
+on a separately approved site that has a form. Each agent starts its own native MCP process;
+no shared HTTP service or browser profile is created. Settings files are never
+rewritten by the kit. Codex syntax follows the [official MCP guide](https://developers.openai.com/codex/mcp/)
+and was checked against Codex 0.167.2. A live session in the published
+mixin on native ARM64 SBX completed MCP navigation and snapshot through the
+SBX proxy with this forwarding configuration. Claude's example follows its
+[stdio MCP documentation](https://code.claude.com/docs/en/mcp); its CLI was not
+available for an execution check.
+
 
 ## CLI and CDP
 

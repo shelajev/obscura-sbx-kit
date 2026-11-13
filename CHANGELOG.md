@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.1 — unreleased
+## 0.1.1 — published (2026-11-13)
+
+Both GHCR kits were published by [release run 43415479048](https://github.com/shelajev/obscura-sbx-kit/actions/runs/43415479048)
+from main `2259a26`, using immutable tag `v0.1.1` at `c57f192`.
+Native AMD64/ARM64 source CI and native ARM64 registry consumption passed.
+Native AMD64 outer SBX remains untested. Consumer examples now pin the
+verified published digests; see [verification](docs/verification.md).
+Never rerun publication or overwrite this version.
 
 - Export explicit OCI media types and force gzip layers, including inherited
   base layers, so Skopeo can copy both kits to registries with digest preservation.
