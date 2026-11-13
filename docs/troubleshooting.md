@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Start inside the sandbox with `command -v obscura` and `obscura --version`.
-Both native executables must exist together under `/opt/obscura`. A loader error
+`/opt/obscura/obscura` and `/opt/obscura/obscura-worker` must exist together. A loader error
 usually means a musl base, missing libgcc or glibc older than 2.35. The launcher
 also needs `/usr/bin/python3` (3.11+). Do not work around package requirements
 by copying host libraries into the sandbox.
@@ -52,10 +52,11 @@ and recreate the sandbox. Preserve other settings and servers. The kit creates
 no state directory to delete by default.
 
 Codex 0.164.0's local stdio environment allowlist excludes proxy variables.
-Its pinned upstream `codex-rs/rmcp-client/src/utils.rs` was inspected in the
-guest. Use README's additive `env_vars` key in `[mcp_servers.obscura]` to forward
-current proxy and CA values. A Python-spawned MCP check alone does not prove
-agent environment forwarding; native host agent validation remains required.
+The upstream `codex-rs/rmcp-client/src/utils.rs` allowlist was inspected. Use README's additive `env_vars` key in `[mcp_servers.obscura]` to forward
+current proxy and CA values. A live Codex 0.164.0 session with this configuration completed native MCP
+HTTPS navigation and snapshot through the SBX proxy. Registry-based native SBX
+installation remains unverified; Python-spawned checks alone do not prove agent
+forwarding.
 The launcher removes raw proxy environment variables after constructing the
 explicit literal `--proxy`; upstream's multiworker server forwards that explicit
-proxy to its own workers. Empty `SSL_CERT_FILE` now selects the default bundle.
+proxy to its own workers. Empty `SSL_CERT_FILE` selects the default bundle.

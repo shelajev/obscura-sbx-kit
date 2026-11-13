@@ -1,7 +1,8 @@
 # Verification and compatibility
 
-All development execution occurred inside the ARM64 SBX guest, using its Docker
-29.7.2 daemon. No host browser, profiles or host Docker were used.
+The source checks below used an ARM64 SBX sandbox and its Docker 29.7.2
+daemon. Subsequent GitHub checks ran on native AMD64 and ARM64 runners.
+No host browser or profiles were used.
 
 | Check | Measured result |
 | --- | --- |
@@ -14,12 +15,12 @@ All development execution occurred inside the ARM64 SBX guest, using its Docker
 | Trust roots | Untrusted fixture CA rejected; supplied CA accepted |
 | Actual SBX proxy | Public HTTPS CLI and MCP pass; private/localhost/metadata URLs denied |
 | ARM64 Docker | Standalone and actual mixin OCI overlay: CLI/MCP/render/TLS/proxy fixture tests and Puppeteer CDP |
-| AMD64 guest Docker + QEMU user mode | Native archive CLI/MCP/render/TLS fixture tests pass under emulation |
-| AMD64 native runner | CI prepared; not run during guest development |
+| AMD64 sandbox Docker + QEMU user mode | Native archive CLI/MCP/render/TLS fixture tests pass under emulation |
+| Native AMD64 and ARM64 GitHub runners | Both architecture checks passed on `2553b4b`; later changes require a new CI run |
 | Official resolver/assembler | Published shell workload + final mixin resolve and compose; composed Docker CLI/MCP/TLS/render/CDP pass |
-| Native SBX 0.53.0 composition | Pending host control-plane check |
-| Public GitHub CI / GHCR publication | Prepared; not run or published |
-| Host editorial/fresh-reader route | Required handoff; not claimed complete |
+| Live Codex 0.164.0 native MCP | Explicit proxy/CA forwarding: HTTPS navigation and snapshot completed in an SBX session |
+| Native SBX 0.53.0 registry composition | Pending publication and registry consumer checks |
+| GHCR publication | Not published |
 
 The AMD64 emulation test invokes the upstream binary through QEMU in an AMD64
 container, not the Python launcher; launcher unit tests and native ARM64 tests
@@ -27,15 +28,28 @@ cover proxy handling. This is not proof of native AMD64 SBX behavior. CDP was
 checked with development-only puppeteer-core 24.26.1 on ARM64; no generic browser
 framework is shipped in either kit.
 
-For reproducible guest checks, install Go 1.26.11 and the pinned TCK, create a
-Buildx container builder, then run from the repository root:
+To reproduce checks, use a build environment with Docker/Buildx, Python 3.11+,
+Go 1.26.11, Node 24.11.1 and npm 11.19.1 (supports the seven-day age hold).
+The commands below install the pinned TCK and create a Buildx container builder.
+Run them from the repository root, with Docker available:
 
 ```sh
 go install github.com/docker/sandbox-kit-spec/v3/cmd/kit-tck@v3.0.0-m.11
 docker buildx create --name obscura-kit --driver docker-container \
   --driver-opt image=moby/buildkit:v0.25.1@sha256:79cc6476ab1a3371c9afd8b44e7c55610057c43e18d9b39b68e2b0c2475cc1b6 --use
-scripts/verify.sh
+bash scripts/verify.sh
 ```
+
+`verify.sh` runs Python unit tests and version consistency checks, builds each
+kit for the current architecture into `.local/`, and runs TCK (expect 19/19).
+It builds and loads standalone and composed-overlay runtime images, runs the
+CLI/MCP/render/TLS/proxy/isolation fixture suite in both, checks license files,
+then runs `npm ci --ignore-scripts` and Puppeteer CDP against both images.
+No separate npm install is needed. A pass exits zero after both CDP summaries;
+a build or test failure stops the script. It does not run native SBX control
+or publish images. It needs the source-build endpoints listed in [setup](setup.md),
+the Go module endpoints and npm registry permitted by your build environment.
+The deterministic browser fixtures need no public browsing grant.
 
 Use `BUILD_CA_FILE=/path/to/public-ca-bundle` only if the build environment needs
 an interception root. It is a BuildKit secret, not retained in the image. The
@@ -53,7 +67,7 @@ kit-tck validate --layout .local/mixin-layout 0.1.0 --verbose
 ```
 
 Repeat with `standalone`, `standalone/obscura.yaml` and a separate output layout.
-The guest also composed the published shell kit
+A sandbox experiment also composed the published shell kit
 `docker.io/docker/sbx-kit-shell@sha256:a72c2ead8a2ab26ac552e4578ea0e23b5e777e81e8a90108e676be09cffa69a4`
 with this mixin through the official m.11 resolver and `assemble.Merge` API,
 preserving base entrypoint/user, then ran the fixture suite and Puppeteer in
@@ -78,6 +92,13 @@ Unit tests use Python's standard library:
 python3 -m unittest discover -s tests -v
 ```
 
+To run only the binary fixture suite from the repository root, after installing
+the launcher and browser in your test sandbox:
+
+```sh
+python3 tests/runtime.py
+```
+
 `tests/runtime.py` executes actual binaries. Its local fixture clears proxy
 variables and opts into private networking only for that process. Set
 `OBSCURA_PUBLIC_HTTPS=https://example.com` to request the separate approved
@@ -87,6 +108,6 @@ The test assumes that public URL has title `Example Domain`.
 The initial hostname-proxy probe failed upstream's DNS SSRF guard. Passing the
 configured proxy as a literal through `--proxy` succeeded without relaxing
 private-target blocking. A negative run without custom-root variables also
-succeeded using this guest's system trust; the controlled test provides the
+succeeded using the sandbox's system trust; the controlled test provides the
 meaningful positive/negative trust-root evidence. Initial TLS fixture and
 frontend namespace mistakes are retained in local evidence, not hidden.

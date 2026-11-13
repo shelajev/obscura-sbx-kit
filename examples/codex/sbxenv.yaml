@@ -2,8 +2,7 @@
 # Replace the OCI reference with a published, verified digest before use.
 schemaVersion: "1"
 name: codex-obscura-example
-agent: sbx-kit-codex
+agent: codex
 kits:
-  - source: docker.io/docker/sbx-kit-codex:0.162.1
   - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.0
 workspace: .

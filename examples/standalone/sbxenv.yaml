@@ -1,4 +1,4 @@
-# Consumer example, not this project's private development environment.
+# Complete standalone shell environment template.
 # The image below is a planned release destination; publication is pending.
 schemaVersion: "1"
 name: obscura-shell-example
