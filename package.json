@@ -1,6 +1,6 @@
 {
   "name": "obscura-sbx-kit-checks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Development-only CDP compatibility checks",
   "license": "Apache-2.0",

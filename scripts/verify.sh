@@ -16,7 +16,8 @@ for kind in mixin standalone; do
   [[ "$kind" != mixin ]] || stem=obscura-mixin
   docker buildx build "$kind" -f "$kind/$stem.yaml" \
     "${secret[@]}" --platform "linux/$arch" -t "$stem:$version" \
-    --output "type=oci,dest=.local/$kind-$arch,tar=false"
+    --output "type=oci,dest=.local/$kind-$arch,tar=false,oci-mediatypes=true,compression=gzip,force-compression=true"
+  python3 scripts/release.py "v$version" --check-layout ".local/$kind-$arch"
   kit-tck validate --layout ".local/$kind-$arch" "$version" --verbose
 done
 docker buildx build standalone -f standalone/obscura.dockerfile \

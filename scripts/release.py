@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate release versions and fail closed before publishing a new OCI version."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -9,6 +10,49 @@ import sys
 
 SEMVER = r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
 IMAGES = ('obscura-sbx-kit-mixin', 'obscura-sbx-kit')
+OCI_INDEX = 'application/vnd.oci.image.index.v1+json'
+OCI_MANIFEST = 'application/vnd.oci.image.manifest.v1+json'
+
+
+def check_layout(layout, version):
+    """Inspect tagged content, not just the OCI layout's index.json wrapper.
+
+    Skopeo adds compression annotations for zstd children on registry copies,
+    changing even an OCI index and making --preserve-digests fail.
+    """
+    layout = Path(layout)
+    wrapper = json.loads((layout / 'index.json').read_text())
+    tagged = [d for d in wrapper['manifests'] if
+              d.get('annotations', {}).get('org.opencontainers.image.ref.name') == version]
+    if len(tagged) != 1:
+        raise ValueError('layout must contain exactly one matching version tag')
+
+    def read(descriptor):
+        digest = descriptor['digest']
+        if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+            raise ValueError('manifest digest must be SHA256')
+        raw = (layout / 'blobs' / 'sha256' / digest[7:]).read_bytes()
+        if len(raw) != descriptor['size'] or hashlib.sha256(raw).hexdigest() != digest[7:]:
+            raise ValueError('manifest size or digest mismatch')
+        value = json.loads(raw)
+        if value.get('mediaType') != descriptor['mediaType']:
+            raise ValueError('manifest media type disagrees with descriptor')
+        return value
+
+    index = read(tagged[0])
+    if index.get('mediaType') != OCI_INDEX:
+        raise ValueError('tagged manifest must be an OCI index')
+    if not index.get('manifests'):
+        raise ValueError('tagged index is empty')
+    for descriptor in index['manifests']:
+        manifest = read(descriptor)
+        if manifest.get('mediaType') != OCI_MANIFEST:
+            raise ValueError('index children must be OCI manifests')
+        attestation = descriptor.get('annotations', {}).get(
+            'vnd.docker.reference.type') == 'attestation-manifest'
+        expected = 'application/vnd.in-toto+json' if attestation else 'application/vnd.oci.image.layer.v1.tar+gzip'
+        if any(layer['mediaType'] != expected for layer in manifest['layers']):
+            raise ValueError('registry digest preservation requires gzip image layers (or in-toto attestations)')
 
 
 def version_for(tag, root=Path('.')):
@@ -45,9 +89,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('tag')
     parser.add_argument('--require-absent', metavar='AUTHFILE')
+    parser.add_argument('--check-layout', metavar='LAYOUT')
     args = parser.parse_args()
     try:
         version = version_for(args.tag)
+        if args.check_layout:
+            check_layout(args.check_layout, version)
         if args.require_absent:
             require_absent(version, args.require_absent)
     except (ValueError, KeyError, OSError, subprocess.TimeoutExpired) as error:

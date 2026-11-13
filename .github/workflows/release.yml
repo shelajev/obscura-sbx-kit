@@ -59,7 +59,8 @@ jobs:
             docker buildx build "$kind" -f "$kind/$stem.yaml" \
               --platform linux/amd64,linux/arm64 \
               -t "ghcr.io/shelajev/$image:$VERSION" \
-              --output "type=oci,dest=/tmp/$kind-layout,tar=false"
+              --output "type=oci,dest=/tmp/$kind-layout,tar=false,oci-mediatypes=true,compression=gzip,force-compression=true"
+            python3 scripts/release.py "v$VERSION" --check-layout "/tmp/$kind-layout"
             kit-tck validate --layout "/tmp/$kind-layout" "$VERSION"
           done
       - name: Publish validated OCI layouts with ephemeral token

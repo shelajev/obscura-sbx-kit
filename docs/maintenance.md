@@ -44,16 +44,16 @@ Keep repository default token permissions read-only, and confirm the Actions
 token can create both GHCR packages. Set package visibility for intended users.
 No Docker Hub secret or long-lived registry token is required.
 
-For the first release, from an up-to-date main checkout after checks pass:
+For the next patch release, from an up-to-date main checkout after checks pass:
 
 ```sh
-python3 scripts/release.py v0.1.0
-git tag v0.1.0
-git push origin refs/tags/v0.1.0
-gh workflow run release.yml --ref main -f tag=v0.1.0
+python3 scripts/release.py v0.1.1
+git tag v0.1.1
+git push origin refs/tags/v0.1.1
+gh workflow run release.yml --ref main -f tag=v0.1.1
 ```
 
-The local validator prints `0.1.0` and rejects mismatched descriptor, package
+The local validator prints `0.1.1` and rejects mismatched descriptor, package
 or lockfile versions. For later releases, bump all those versions and the
 changelog/examples, then use the new `vMAJOR.MINOR.PATCH` tag. Do not force or
 move an existing Git tag.
@@ -64,8 +64,8 @@ validates it against both kit descriptors and package manifests. It builds both
 architectures and validates both OCI layouts before registry login, then copies
 those exact layouts with digest preservation to:
 
-- `ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.0`
-- `ghcr.io/shelajev/obscura-sbx-kit:0.1.0`
+- `ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1`
+- `ghcr.io/shelajev/obscura-sbx-kit:0.1.1`
 
 Only the publication job has `packages: write`, using ephemeral `GITHUB_TOKEN`
 and a temporary auth file removed on exit. The workflow checks both destinations
@@ -81,7 +81,26 @@ hide failures. Successful copies record each `ghcr.io/...@sha256:...` reference
 in the Actions job summary. Record both, run registry TCK and native SBX consumer
 checks using those digests, then update examples to the verified digest references.
 
-No release has been published yet. The workflow does not sign kits or attest
+Release 0.1.0 is a failed partial publication: manual run `43404277441`
+published the mixin index
+`sha256:dc1ed99195b00eecf4143a6767e151c123a6ebf3cfa28c126ea1cef440e9f2b4`,
+then failed copying the standalone index. The standalone tag returned
+`manifest unknown`; blobs may remain. No GitHub release was published.
+Retain `v0.1.0` on `d3d17a8` and both registry destinations; never rerun 0.1.0.
+Prepare 0.1.1 through review and fresh native CI instead.
+
+Exports must set `oci-mediatypes=true,compression=gzip,force-compression=true`.
+The inherited workload base has zstd layers. Skopeo adds compression annotations
+to its index during registry copy, which violates `--preserve-digests` even when
+the original tagged index is already OCI. Explicit OCI media types alone do not
+fix this. Forcing gzip also recompresses inherited layers; retain provenance.
+The pre-login layout check reads the actual tagged blob and its child manifests,
+checks their digests/media types and rejects non-gzip image layers. An OCI layout
+wrapper and a successful OCI-to-OCI copy alone do not prove registry compatibility.
+Test a preserved-digest copy to a disposable registry before publication.
+
+0.1.1 GHCR publication and native registry consumption remain pending.
+The workflow does not sign kits or attest
 independent review. Environments requiring signatures need a separately validated
 signing path before consumption. All workflows use push/manual events only.
 

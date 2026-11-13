@@ -4,5 +4,5 @@ schemaVersion: "1"
 name: codex-obscura-example
 agent: codex
 kits:
-  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.0
+  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1
 workspace: .

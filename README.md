@@ -4,10 +4,10 @@ Add [Obscura](https://www.obscura.sh/) to an existing SBX agent as a browser
 mixin. The kit installs Obscura 0.2.6 and its worker, with native stdio MCP,
 CLI and loopback CDP. It adds no credentials or browsing network grants.
 
-**Status:** source builds and Docker runtime checks pass. Native AMD64 and
-ARM64 GitHub checks passed on commit `2553b4b`; changes after it need a fresh
-CI run. GHCR publication and native SBX registry composition are pending.
-The registry names below are planned destinations, not published images.
+**Status:** 0.1.0 partially published: the mixin was uploaded, but standalone
+publication failed; no GitHub release was published. Both destinations and the
+Git tag are retained. The examples target the pending 0.1.1 patch; they are not
+yet verified published references. See [release history](CHANGELOG.md).
 To try a local checkout before publication, see [setup](docs/setup.md).
 
 ## Add it to your agent
@@ -24,7 +24,7 @@ Once the release is published to GHCR, add this entry to your existing
 ```yaml
 kits:
   # Keep your existing workload and other mixins here.
-  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.0
+  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1
 ```
 
 Prefer the verified release digest over a tag. GHCR must be permitted by your
