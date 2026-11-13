@@ -39,13 +39,18 @@ def check_layout(layout, version):
             raise ValueError('manifest media type disagrees with descriptor')
         return value
 
-    index = read(tagged[0])
-    if index.get('mediaType') != OCI_INDEX:
-        raise ValueError('tagged manifest must be an OCI index')
-    if not index.get('manifests'):
-        raise ValueError('tagged index is empty')
-    for descriptor in index['manifests']:
-        manifest = read(descriptor)
+    content = read(tagged[0])
+    if content.get('mediaType') == OCI_INDEX:
+        if not content.get('manifests'):
+            raise ValueError('tagged index is empty')
+        manifests = [(descriptor, read(descriptor))
+                     for descriptor in content['manifests']]
+    elif content.get('mediaType') == OCI_MANIFEST:
+        # Single-platform exports without provenance tag the image directly.
+        manifests = [(tagged[0], content)]
+    else:
+        raise ValueError('tagged manifest must be an OCI index or OCI image manifest')
+    for descriptor, manifest in manifests:
         if manifest.get('mediaType') != OCI_MANIFEST:
             raise ValueError('index children must be OCI manifests')
         attestation = descriptor.get('annotations', {}).get(

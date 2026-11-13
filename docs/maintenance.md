@@ -94,7 +94,9 @@ The inherited workload base has zstd layers. Skopeo adds compression annotations
 to its index during registry copy, which violates `--preserve-digests` even when
 the original tagged index is already OCI. Explicit OCI media types alone do not
 fix this. Forcing gzip also recompresses inherited layers; retain provenance.
-The pre-login layout check reads the actual tagged blob and its child manifests,
+Validation and release pin the Buildx CLI to v0.38.2 (released 2026-11-03,
+held for at least seven days). The pre-login layout check accepts a single-platform
+OCI image manifest or an OCI index and reads the tagged blob and any child manifests,
 checks their digests/media types and rejects non-gzip image layers. An OCI layout
 wrapper and a successful OCI-to-OCI copy alone do not prove registry compatibility.
 Test a preserved-digest copy to a disposable registry before publication.

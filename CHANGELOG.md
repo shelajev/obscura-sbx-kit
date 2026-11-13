@@ -6,8 +6,10 @@
   base layers, so Skopeo can copy both kits to registries with digest preservation.
   Retain provenance; OCI media types alone do not prevent zstd index annotation
   rewrites during registry copy.
-- Check the actual tagged index and child manifest blobs before login, rejecting
+- Accept single-platform OCI image manifests as well as tagged OCI indexes;
+  check tagged and child manifest blobs before login, rejecting
   non-OCI manifests and image layers requiring compression annotation rewrites.
+- Pin the tested Buildx CLI to v0.38.2 in validation and release workflows.
 - Bump both kits, development package/lockfile and consumer examples together.
 
 ## 0.1.0 — partial publication (2026-11-13)
