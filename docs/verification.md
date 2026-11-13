@@ -16,11 +16,13 @@ No host browser or profiles were used.
 | Actual SBX proxy | Public HTTPS CLI and MCP pass; private/localhost/metadata URLs denied |
 | ARM64 Docker | Standalone and actual mixin OCI overlay: CLI/MCP/render/TLS/proxy fixture tests and Puppeteer CDP |
 | AMD64 sandbox Docker + QEMU user mode | Native archive CLI/MCP/render/TLS fixture tests pass under emulation |
-| Native AMD64 and ARM64 GitHub runners | Both architecture checks passed for reviewed 0.1.0 commit `d3d17a8`; 0.1.1 requires fresh native CI |
+| Native AMD64 and ARM64 GitHub runners | Both architecture checks passed for 0.1.1 tag source `c57f192` and merged main `2259a26` |
 | Official resolver/assembler | Published shell workload + final mixin resolve and compose; composed Docker CLI/MCP/TLS/render/CDP pass |
-| Live Codex 0.164.0 native MCP | Explicit proxy/CA forwarding: HTTPS navigation and snapshot completed in an SBX session |
-| Native SBX 0.53.0 registry composition | Pending publication and registry consumer checks |
-| GHCR publication | 0.1.0 partial failure; 0.1.1 pending |
+| Live Codex 0.167.2 native MCP | Published mixin on native ARM64 SBX: HTTPS navigation and snapshot passed with explicit proxy/CA forwarding |
+| Native ARM64 SBX 0.53.0 registry composition | Both published immutable digests created sandboxes; each passed all five runtime tests and loopback CDP checks |
+| Native AMD64 outer SBX composition | Untested; native AMD64 GitHub CI is separate coverage |
+| Published registry TCK | Both digest-preserving copies and layout guards passed; mixin and standalone each completed 19/19 |
+| GHCR publication | 0.1.1 succeeded for both kits; 0.1.0 partial failure retained |
 
 The AMD64 emulation test invokes the upstream binary through QEMU in an AMD64
 container, not the Python launcher; launcher unit tests and native ARM64 tests
@@ -131,8 +133,47 @@ remains enabled. The release layout check traverses the actual tagged blob and
 children, verifying their digests and media types and rejecting non-gzip image
 layers. TCK and OCI-to-OCI copies alone did not catch this registry-copy behavior.
 
-The 0.1.1 patch still needs native AMD64/ARM64 CI, guarded Actions publication,
-GHCR digest checks and native SBX consumer validation before release claims.
+## Published 0.1.1 validation
+
+[Native source CI](https://github.com/shelajev/obscura-sbx-kit/actions/runs/43414488782)
+passed on real AMD64 and ARM64 runners for tag source
+`c57f192289b59f1fb33278aa50dfacc474a0bdda`.
+[Merged-main CI](https://github.com/shelajev/obscura-sbx-kit/actions/runs/43415406091)
+also passed at `2259a26`. Each architecture ran unit, build, layout/TCK,
+standalone and composed runtime, and Puppeteer CDP checks. The optional public
+HTTPS runtime test was skipped in CI; it passed separately in native ARM64 SBX.
+
+[Release run 43415479048](https://github.com/shelajev/obscura-sbx-kit/actions/runs/43415479048)
+published both kits from that merged main using immutable `v0.1.1`.
+The raw published index bytes matched these SHA256 references, now pinned in
+[setup](setup.md) and both consumer examples:
+
+- `ghcr.io/shelajev/obscura-sbx-kit-mixin@sha256:29aa5cd0daf043d4599a64dc885deddab43824b1d2f2849b165f4ff502d85c36`
+- `ghcr.io/shelajev/obscura-sbx-kit@sha256:40759258242928bcd042ce10b23e35279fcd50e278480ae459a50abe6b9888a8`
+
+Both packages were anonymously readable. Digest-preserving copies and layout
+guards passed for both published kits. The final registry TCK completed
+19/19 checks for each, including the standalone check that was still running
+when the initial publication evidence was recorded.
+
+Native ARM64 SBX 0.53.0 created a standalone sandbox and composed the published
+mixin with the official agent kit
+`docker.io/sbx/codex@sha256:5aa3f585b5a42cca80f5921e99890c9f0035b31d21553efd3d1d2171e46eb572`
+(Codex 0.167.2, Python 3.14.10). Each passed all five `tests/runtime.py` tests:
+CLI JS/render/SSRF, positive/negative TLS trust, MCP interactions and independent
+state, proxied HTTPS subresources and live SSRF denial, and public HTTPS CLI/MCP
+with private/metadata/localhost denial. Separate `/json/version` and kernel TCP
+listener checks confirmed CDP bound only to `127.0.0.1`. The mixin retained the
+binaries, worker, LICENSE/NOTICE and V8 notice. A live Codex turn used registered
+native MCP navigation and snapshot to return the Example Domain title and
+first visible sentence. Existing configuration was preserved; only the scoped
+`example.com:443` browsing grant was added.
+
+Host-native `sbx env plan` passed for both updated consumer YAML files,
+selecting the expected agents and published digests. The example environments
+were planned only; runtime tests used separate native sandboxes. Live Claude
+CLI registration and native AMD64 outer SBX composition remain untested. These checks do not establish Chrome, CAPTCHA or general
+site compatibility.
 
 The fresh patch exports used Buildx 0.38.2 and the pinned BuildKit/frontend in
 an ARM64 SBX. DHI began returning anonymous-token HTTP 401 during testing;
@@ -140,5 +181,6 @@ subsequent builds used a local registry mirror reconstructed from existing SBX
 content. Every base blob and the original pinned index digest were verified.
 Both architecture configs retain identical inherited uncompressed layer IDs.
 Initial authentication, disk exhaustion and transient exporter lock errors are
-retained in private local evidence. These checks do not establish fresh native
-AMD64 runtime behavior or successful GHCR publication.
+retained in private local evidence. That earlier mirror-based experiment did not itself establish native AMD64
+runtime behavior or GHCR publication; the later CI and publication checks above
+provide those separate results.

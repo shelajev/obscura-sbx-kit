@@ -51,12 +51,11 @@ To remove agent wiring, use `codex mcp remove obscura` or
 and recreate the sandbox. Preserve other settings and servers. The kit creates
 no state directory to delete by default.
 
-Codex 0.164.0's local stdio environment allowlist excludes proxy variables.
-The upstream `codex-rs/rmcp-client/src/utils.rs` allowlist was inspected. Use README's additive `env_vars` key in `[mcp_servers.obscura]` to forward
-current proxy and CA values. A live Codex 0.164.0 session with this configuration completed native MCP
-HTTPS navigation and snapshot through the SBX proxy. Registry-based native SBX
-installation remains unverified; Python-spawned checks alone do not prove agent
-forwarding.
+Codex filters the environment passed to stdio MCP children. Use README's
+additive `env_vars` key in `[mcp_servers.obscura]` to forward current proxy and
+CA values. A live Codex 0.167.2 session in the published mixin on native ARM64
+SBX completed native MCP HTTPS navigation and snapshot with this configuration.
+Python-spawned checks alone do not prove agent forwarding.
 The launcher removes raw proxy environment variables after constructing the
 explicit literal `--proxy`; upstream's multiworker server forwards that explicit
 proxy to its own workers. Empty `SSL_CERT_FILE` selects the default bundle.

@@ -1,8 +1,8 @@
 # Consumer example. Keep your existing agent reference, credentials and options.
-# Replace the OCI reference with a published, verified digest before use.
+# Published 0.1.1 immutable digest; optional tag: obscura-sbx-kit-mixin:0.1.1.
 schemaVersion: "1"
 name: codex-obscura-example
 agent: codex
 kits:
-  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1
+  - source: ghcr.io/shelajev/obscura-sbx-kit-mixin@sha256:29aa5cd0daf043d4599a64dc885deddab43824b1d2f2849b165f4ff502d85c36
 workspace: .
