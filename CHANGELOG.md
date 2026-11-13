@@ -12,3 +12,5 @@
   measured checks from pending registry consumption.
 - Add built-in Actions dependency renewal, synchronized release version checks
   and fail-closed protection against overwriting either published kit version.
+- Initialize ephemeral registry authentication as JSON and handle signal-exited
+  CDP browser processes without hanging cleanup.

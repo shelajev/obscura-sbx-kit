@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -20,6 +21,30 @@ class ReleaseTests(unittest.TestCase):
         (root / 'package.json').write_text(json.dumps({'version': version}))
         (root / 'package-lock.json').write_text(json.dumps(
             {'version': version, 'packages': {'': {'version': version}}}))
+
+    def test_workflow_initializes_private_authfile_before_login(self):
+        # Execute the actual setup shell, stopping where real registry login begins.
+        workflow = Path('.github/workflows/release.yml').read_text()
+        setup = workflow.split('          authfile=$(mktemp)\n', 1)[1]
+        setup = setup.split("          printf '%s' \"$GHCR_TOKEN\"", 1)[0]
+        script = 'set -euo pipefail\nauthfile=$(mktemp)\n' + setup
+        with tempfile.TemporaryDirectory() as tmp:
+            authfile = Path(tmp) / 'auth.json'
+            bindir = Path(tmp) / 'bin'
+            bindir.mkdir()
+            mktemp = bindir / 'mktemp'
+            mktemp.write_text('#!/bin/sh\n(umask 077; : > "$TEST_AUTHFILE")\nprintf "%s\\n" "$TEST_AUTHFILE"\n')
+            mktemp.chmod(0o700)
+            probe = ("python3 -c 'import json,os,stat,sys; "
+                     'p=sys.argv[1]; assert json.load(open(p)) == {}; '
+                     "assert stat.S_IMODE(os.stat(p).st_mode) == 0o600' \"$authfile\"\n")
+            env = {**os.environ, 'PATH': str(bindir) + os.pathsep + os.environ['PATH'],
+                   'TEST_AUTHFILE': str(authfile)}
+            for ending in ('', 'exit 7\n'):
+                result = subprocess.run(['bash', '-c', script + probe + ending],
+                                        env=env, capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 7 if ending else 0, result.stderr)
+                self.assertFalse(authfile.exists(), 'EXIT trap must remove authfile')
 
     def test_current_version_and_future_version(self):
         current = json.loads(Path('package.json').read_text())['version']
