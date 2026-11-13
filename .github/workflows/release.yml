@@ -75,6 +75,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends skopeo
           authfile=$(mktemp)
           trap 'rm -f "$authfile"' EXIT
+          printf '{}\n' > "$authfile"
           printf '%s' "$GHCR_TOKEN" | skopeo login --authfile "$authfile" \
             --username "$GHCR_ACTOR" --password-stdin ghcr.io
           # Check both destinations immediately before the first write.

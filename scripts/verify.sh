@@ -33,5 +33,6 @@ for image in "obscura-runtime:$version" "obscura-overlay-test:$version"; do
     'from pathlib import Path; assert all(Path("/opt/obscura",p).is_file() for p in ("LICENSE", "NOTICE", "licenses/V8.txt"))'
 done
 npm ci --ignore-scripts
+python3 -m unittest discover -s tests -p test_cdp.py -v
 OBSCURA_DOCKER_IMAGE=obscura-runtime:$version node tests/cdp.mjs
 OBSCURA_DOCKER_IMAGE=obscura-overlay-test:$version node tests/cdp.mjs

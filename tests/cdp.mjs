@@ -38,7 +38,7 @@ let browser;
 try {
   let address;
   for (let i = 0; i < 200; i++) {
-    if (server.exitCode !== null) throw new Error(logs);
+    if (server.exitCode !== null || server.signalCode !== null) throw new Error(logs);
     try { address = (await readFile(ready, 'utf8')).trim(); break; }
     catch { await new Promise(resolve => setTimeout(resolve, 50)); }
   }
@@ -68,7 +68,7 @@ try {
 } finally {
   if (browser) browser.disconnect();
   server.kill('SIGTERM');
-  await new Promise(resolve => { if (server.exitCode !== null) resolve(); else server.once('exit', resolve); });
+  await new Promise(resolve => { if (server.exitCode !== null || server.signalCode !== null) resolve(); else server.once('exit', resolve); });
   await rm(dir, {recursive: true, force: true});
   await Promise.all([new Promise(resolve => proxy.close(resolve)), new Promise(resolve => livePrivate.close(resolve))]);
 }
