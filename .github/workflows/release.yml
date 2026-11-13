@@ -1,0 +1,89 @@
+name: Publish release kits
+# Manual on main only. Configure the release environment for main deployments.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing reviewed release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: publish-kits
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'shelajev/obscura-sbx-kit' && github.ref == 'refs/heads/main'
+    environment: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve reviewed release
+        id: release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          # Validate before passing user input to Git. Never interpolate it into shell.
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}"
+          git merge-base --is-ancestor "refs/tags/$RELEASE_TAG^{commit}" HEAD
+          git checkout --detach "refs/tags/$RELEASE_TAG^{commit}"
+          version=$(python3 scripts/release.py "$RELEASE_TAG")
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          driver-opts: image=moby/buildkit:v0.25.1@sha256:79cc6476ab1a3371c9afd8b44e7c55610057c43e18d9b39b68e2b0c2475cc1b6
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.11'
+          cache: false
+      - name: Build and validate both architectures before login
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          go install github.com/docker/sandbox-kit-spec/v3/cmd/kit-tck@v3.0.0-m.11
+          for kind in mixin standalone; do
+            stem=obscura
+            image=obscura-sbx-kit
+            if [ "$kind" = mixin ]; then stem=obscura-mixin; image=obscura-sbx-kit-mixin; fi
+            docker buildx build "$kind" -f "$kind/$stem.yaml" \
+              --platform linux/amd64,linux/arm64 \
+              -t "ghcr.io/shelajev/$image:$VERSION" \
+              --output "type=oci,dest=/tmp/$kind-layout,tar=false"
+            kit-tck validate --layout "/tmp/$kind-layout" "$VERSION"
+          done
+      - name: Publish validated OCI layouts with ephemeral token
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          # skopeo copies the validated layouts, avoiding a second, different build.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo
+          authfile=$(mktemp)
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" | skopeo login --authfile "$authfile" \
+            --username "$GHCR_ACTOR" --password-stdin ghcr.io
+          # Check both destinations immediately before the first write.
+          python3 scripts/release.py "$RELEASE_TAG" --require-absent "$authfile"
+          for kind in mixin standalone; do
+            image=obscura-sbx-kit
+            if [ "$kind" = mixin ]; then image=obscura-sbx-kit-mixin; fi
+            skopeo copy --all --preserve-digests --digestfile "/tmp/$kind-digest" --authfile "$authfile" \
+              "oci:/tmp/$kind-layout:$VERSION" "docker://ghcr.io/shelajev/$image:$VERSION"
+            digest=$(cat "/tmp/$kind-digest")
+            printf '%s@%s\n' "ghcr.io/shelajev/$image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+          done

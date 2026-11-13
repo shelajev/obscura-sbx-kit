@@ -1,0 +1,9 @@
+{
+  "name": "obscura-sbx-kit-checks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development-only CDP compatibility checks",
+  "license": "Apache-2.0",
+  "scripts": {"test:cdp": "node tests/cdp.mjs"},
+  "devDependencies": {"puppeteer-core": "24.26.1"}
+}

@@ -1,0 +1,12 @@
+**
+!obscura.yaml
+!obscura.dockerfile
+!obscura-mixin.yaml
+!obscura-mixin.dockerfile
+!scripts/
+!scripts/obscura.py
+!scripts/install-browser.py
+!LICENSE
+!NOTICE
+!licenses/
+!licenses/**

@@ -1,0 +1,13 @@
+Obscura SBX kit
+Copyright 2026 Obscura SBX kit contributors
+
+This project installs, but does not vendor, Obscura v0.2.6:
+https://github.com/h4ckf0r0day/obscura (Apache-2.0).
+Obscura archives include obscura and obscura-worker, built with upstream's
+third-party dependencies, including V8 and rendering libraries. Distribution
+must retain applicable upstream notices; inspect the release and source
+licenses before publishing a new browser version.
+
+Container bases and the kit frontend are separate upstream OCI artifacts.
+Their licenses and SBOMs remain available from Docker/DHI. This repository's
+Apache-2.0 license does not relicense those components.

@@ -1,0 +1,23 @@
+# syntax=docker/sandbox-kit:3@sha256:adbc0d1ea63451871d5d78111120bb29f2fd2b265e63d39c664ae2c3d722c805
+schemaVersion: "3"
+kind: mixin
+displayName: Obscura browser
+description: Native Obscura CLI, stdio MCP and loopback CDP for an existing agent
+version: "0.1.0"
+sourceUrl: https://github.com/shelajev/obscura-sbx-kit
+licenses: [Apache-2.0]
+provides: ["io.github.shelajev/obscura@0.2.6"]
+requires:
+  - deb/libc6 >= 2.35
+  - deb/libgcc-s1 >= 12
+  - deb/ca-certificates
+# No runtime network grants. The operator grants only required browsing targets.
+capabilities:
+  # DHI and Debian use different versioned Python package names. Validate the
+  # executable instead of requiring a package alias the workload may not have.
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: /usr/bin/python3 -c 'import ipaddress, os, socket, ssl, sys, urllib.parse; assert sys.version_info >= (3, 11), "Python 3.11+ required"'
+          user: agent
+          description: Verify the launcher Python runtime without changing agent settings
