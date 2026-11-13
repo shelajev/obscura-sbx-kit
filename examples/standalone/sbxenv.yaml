@@ -4,5 +4,5 @@ schemaVersion: "1"
 name: obscura-shell-example
 agent: obscura-sbx-kit
 kits:
-  - source: ghcr.io/shelajev/obscura-sbx-kit:0.1.0
+  - source: ghcr.io/shelajev/obscura-sbx-kit:0.1.1
 workspace: .

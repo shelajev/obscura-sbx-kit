@@ -49,8 +49,8 @@ sbx run 'git+https://github.com/shelajev/obscura-sbx-kit.git#ref=COMMIT&dir=stan
 After GHCR publication, the registry equivalents avoid source builds:
 
 ```sh
-sbx run codex --kit ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.0 .
-sbx run ghcr.io/shelajev/obscura-sbx-kit:0.1.0 .
+sbx run codex --kit ghcr.io/shelajev/obscura-sbx-kit-mixin:0.1.1 .
+sbx run ghcr.io/shelajev/obscura-sbx-kit:0.1.1 .
 ```
 
 Prefer each release's verified digest instead of its version tag. These are

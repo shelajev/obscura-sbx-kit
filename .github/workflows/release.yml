@@ -41,6 +41,7 @@ jobs:
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
         with:
+          version: v0.38.2
           driver-opts: image=moby/buildkit:v0.25.1@sha256:79cc6476ab1a3371c9afd8b44e7c55610057c43e18d9b39b68e2b0c2475cc1b6
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
@@ -59,7 +60,8 @@ jobs:
             docker buildx build "$kind" -f "$kind/$stem.yaml" \
               --platform linux/amd64,linux/arm64 \
               -t "ghcr.io/shelajev/$image:$VERSION" \
-              --output "type=oci,dest=/tmp/$kind-layout,tar=false"
+              --output "type=oci,dest=/tmp/$kind-layout,tar=false,oci-mediatypes=true,compression=gzip,force-compression=true"
+            python3 scripts/release.py "v$VERSION" --check-layout "/tmp/$kind-layout"
             kit-tck validate --layout "/tmp/$kind-layout" "$VERSION"
           done
       - name: Publish validated OCI layouts with ephemeral token

@@ -16,11 +16,11 @@ No host browser or profiles were used.
 | Actual SBX proxy | Public HTTPS CLI and MCP pass; private/localhost/metadata URLs denied |
 | ARM64 Docker | Standalone and actual mixin OCI overlay: CLI/MCP/render/TLS/proxy fixture tests and Puppeteer CDP |
 | AMD64 sandbox Docker + QEMU user mode | Native archive CLI/MCP/render/TLS fixture tests pass under emulation |
-| Native AMD64 and ARM64 GitHub runners | Both architecture checks passed on `2553b4b`; later changes require a new CI run |
+| Native AMD64 and ARM64 GitHub runners | Both architecture checks passed for reviewed 0.1.0 commit `d3d17a8`; 0.1.1 requires fresh native CI |
 | Official resolver/assembler | Published shell workload + final mixin resolve and compose; composed Docker CLI/MCP/TLS/render/CDP pass |
 | Live Codex 0.164.0 native MCP | Explicit proxy/CA forwarding: HTTPS navigation and snapshot completed in an SBX session |
 | Native SBX 0.53.0 registry composition | Pending publication and registry consumer checks |
-| GHCR publication | Not published |
+| GHCR publication | 0.1.0 partial failure; 0.1.1 pending |
 
 The AMD64 emulation test invokes the upstream binary through QEMU in an AMD64
 container, not the Python launcher; launcher unit tests and native ARM64 tests
@@ -61,9 +61,9 @@ For a multiarch OCI artifact (build execution stays on the build machine):
 
 ```sh
 docker buildx build mixin -f mixin/obscura-mixin.yaml \
-  --platform linux/amd64,linux/arm64 -t obscura-mixin:0.1.0 \
-  --output type=oci,dest=.local/mixin-layout,tar=false
-kit-tck validate --layout .local/mixin-layout 0.1.0 --verbose
+  --platform linux/amd64,linux/arm64 -t obscura-mixin:0.1.1 \
+  --output type=oci,dest=.local/mixin-layout,tar=false,oci-mediatypes=true,compression=gzip,force-compression=true
+kit-tck validate --layout .local/mixin-layout 0.1.1 --verbose
 ```
 
 Repeat with `standalone`, `standalone/obscura.yaml` and a separate output layout.
@@ -111,3 +111,34 @@ private-target blocking. A negative run without custom-root variables also
 succeeded using the sandbox's system trust; the controlled test provides the
 meaningful positive/negative trust-root evidence. Initial TLS fixture and
 frontend namespace mistakes are retained in local evidence, not hidden.
+
+Release 0.1.0 run `43404277441` published the mixin OCI index
+`sha256:dc1ed99195b00eecf4143a6767e151c123a6ebf3cfa28c126ea1cef440e9f2b4`
+and failed copying the standalone index. No GitHub release was published.
+The standalone tag returned `manifest unknown`; partial blobs may remain.
+Neither registry destination nor `v0.1.0` may be overwritten or deleted.
+
+Saved local layouts and fresh Buildx 0.36.1/0.38.2 exports already have OCI
+indexes and OCI children. A sandbox-local registry reproduced the precise
+preserved-digest failure: inherited zstd workload layers cause Skopeo to add
+`io.github.containers.compression.zstd` annotations to platform descriptors.
+An unrestricted diagnostic copy exposed that index change. Skopeo 1.13.3
+(the Actions version) reproduced the error and successfully copied both fixed
+0.1.1 kits with `--all --preserve-digests` to a sandbox-local registry. The
+registry returned byte-for-byte identical tagged index blobs for both kits. The fix explicitly
+exports OCI with gzip and forces recompression of inherited layers; provenance
+remains enabled. The release layout check traverses the actual tagged blob and
+children, verifying their digests and media types and rejecting non-gzip image
+layers. TCK and OCI-to-OCI copies alone did not catch this registry-copy behavior.
+
+The 0.1.1 patch still needs native AMD64/ARM64 CI, guarded Actions publication,
+GHCR digest checks and native SBX consumer validation before release claims.
+
+The fresh patch exports used Buildx 0.38.2 and the pinned BuildKit/frontend in
+an ARM64 SBX. DHI began returning anonymous-token HTTP 401 during testing;
+subsequent builds used a local registry mirror reconstructed from existing SBX
+content. Every base blob and the original pinned index digest were verified.
+Both architecture configs retain identical inherited uncompressed layer IDs.
+Initial authentication, disk exhaustion and transient exporter lock errors are
+retained in private local evidence. These checks do not establish fresh native
+AMD64 runtime behavior or successful GHCR publication.
